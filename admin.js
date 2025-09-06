@@ -6,7 +6,6 @@ const ADMIN_PASSWORD = 'eliandra2025';
 
 // --- FUNÇÕES DE AUTENTICAÇÃO ---
 
-// Função de login
 function login() {
     const password = document.getElementById('password').value;
     
@@ -20,16 +19,14 @@ function login() {
     }
 }
 
-// Função de logout
 function logout() {
     document.getElementById('login-section').style.display = 'block';
     document.getElementById('admin-panel').style.display = 'none';
     document.getElementById('password').value = '';
 }
 
-// --- FUNÇÕES DE DADOS (COMUNICAÇÃO COM A PLANILHA) ---
+// --- FUNÇÕES DE DADOS ---
 
-// Carregar confirmações da Planilha Google
 async function loadConfirmations() {
     try {
         const response = await fetch(SCRIPT_URL);
@@ -44,7 +41,6 @@ async function loadConfirmations() {
     }
 }
 
-// Exibir confirmações na lista (a função original, sem alterações)
 function displayConfirmations(confirmations) {
     const guestList = document.getElementById('guest-list');
     const totalConfirmationsElement = document.getElementById('total-confirmations');
@@ -61,12 +57,9 @@ function displayConfirmations(confirmations) {
     
     let totalGuests = 0;
     
-    // O script já retorna os dados com o mais recente primeiro
     confirmations.forEach(confirmation => {
         const guestItem = document.createElement('div');
         guestItem.className = 'guest-item';
-        
-        // A data/hora já vem formatada do script
         const formattedDate = confirmation.timestamp; 
         
         guestItem.innerHTML = `
@@ -78,8 +71,6 @@ function displayConfirmations(confirmations) {
         `;
         
         guestList.appendChild(guestItem);
-        
-        // Calcular total de pessoas (convidado + acompanhantes)
         totalGuests += 1 + parseInt(confirmation.companions || 0);
     });
     
@@ -87,12 +78,10 @@ function displayConfirmations(confirmations) {
     totalGuestsElement.textContent = totalGuests;
 }
 
-// Atualizar dados (simplesmente chama a função de carregar)
 function refreshData() {
     loadConfirmations();
 }
 
-// Exportar dados para CSV
 async function exportData() {
     try {
         const response = await fetch(SCRIPT_URL);
@@ -127,8 +116,14 @@ async function exportData() {
 
 // --- INICIALIZAÇÃO DA PÁGINA ---
 
-// Adiciona um listener para a página carregar
+// Adiciona os eventos quando a página carregar
 document.addEventListener('DOMContentLoaded', function() {
+    // Conecta as funções aos botões
+    document.getElementById('login-btn').addEventListener('click', login);
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('refresh-btn').addEventListener('click', refreshData);
+    document.getElementById('export-btn').addEventListener('click', exportData);
+    
     // Permite fazer login apertando a tecla "Enter"
     document.getElementById('password').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
