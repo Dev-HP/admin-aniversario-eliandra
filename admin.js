@@ -1,3 +1,61 @@
+// Cole a MESMA URL que você usou na página de confirmação
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz04yKUOFiB6aoCsNGNTGoEaCQmcL2zSxL2kUEYkXwlz4MVi9qxzNJWuiRtQkuLGpjxdg/exec";
+
+// ... (funções login e logout continuam iguais) ...
+
+// Carregar confirmações da Planilha Google
+async function loadConfirmations() {
+    try {
+        const response = await fetch(SCRIPT_URL);
+        if (!response.ok) {
+            throw new Error('Erro na rede ao buscar dados.');
+        }
+        const confirmations = await response.json();
+
+        // Passa os dados para a função que monta a lista na tela
+        displayConfirmations(confirmations);
+
+    } catch (error) {
+        console.error('Erro ao carregar confirmações:', error);
+        document.getElementById('guest-list').innerHTML = '<div class="guest-item">Erro ao carregar dados. Tente atualizar.</div>';
+    }
+}
+
+// A função displayConfirmations continua exatamente a mesma.
+
+// Exportar dados
+async function exportData() {
+    try {
+        const response = await fetch(SCRIPT_URL);
+        const confirmations = await response.json();
+
+        if (confirmations.length === 0) {
+            alert('Nenhum dado para exportar.');
+            return;
+        }
+
+        let csv = 'Nome,Acompanhantes,Data/Hora\n';
+        confirmations.forEach(confirmation => {
+            // A data já vem formatada do script
+            csv += `"${confirmation.name}",${confirmation.companions},"${confirmation.timestamp}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'confirmacoes-aniversario.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (error) {
+        console.error('Erro ao exportar dados:', error);
+        alert('Erro ao exportar dados.');
+    }
+}
+
+// ... (Resto do arquivo) ...
 // Configurações
 const ADMIN_PASSWORD = 'eliandra2025'; // Altere para uma senha mais segura
 
