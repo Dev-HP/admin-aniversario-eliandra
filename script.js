@@ -1,134 +1,102 @@
-// Configurações
-const ADMIN_PASSWORD = 'eliandra2025'; // Altere para uma senha mais segura
+// Configuração da API - Substitua pela URL do seu backend no Render
+const BACKEND_URL = 'https://backend-aniversario-eliandra.onrender.com';
 
-// Função de login
-function login() {
-    const password = document.getElementById('password').value;
+// Função para inicializar a página
+document.addEventListener('DOMContentLoaded', function() {
+    initForm();
+});
+
+// Inicializar o formulário de confirmação
+function initForm() {
+    const form = document.getElementById('confirm-form');
     
-    if (password === ADMIN_PASSWORD) {
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'block';
-        document.getElementById('login-error').style.display = 'none';
-        loadConfirmations();
-    } else {
-        document.getElementById('login-error').style.display = 'block';
-    }
-}
-
-// Função de logout
-function logout() {
-    document.getElementById('login-section').style.display = 'block';
-    document.getElementById('admin-panel').style.display = 'none';
-    document.getElementById('password').value = '';
-}
-
-// Carregar confirmações
-function loadConfirmations() {
-    try {
-        // Tenta carregar do localStorage primeiro
-        const confirmations = JSON.parse(localStorage.getItem('confirmedGuests')) || [];
-        displayConfirmations(confirmations);
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        // Se não houver dados no localStorage, tenta carregar do backend
-        if (confirmations.length === 0) {
-            // Você pode implementar uma chamada para um backend aqui se necessário
-            console.log('Nenhuma confirmação encontrada no localStorage');
-        }
-    } catch (error) {
-        console.error('Erro ao carregar confirmações:', error);
-    }
-}
-
-// Exibir confirmações na lista
-function displayConfirmations(confirmations) {
-    const guestList = document.getElementById('guest-list');
-    const totalConfirmationsElement = document.getElementById('total-confirmations');
-    const totalGuestsElement = document.getElementById('total-guests');
-    
-    guestList.innerHTML = '';
-    
-    if (confirmations.length === 0) {
-        guestList.innerHTML = '<div class="guest-item">Nenhuma confirmação ainda.</div>';
-        totalConfirmationsElement.textContent = '0';
-        totalGuestsElement.textContent = '0';
-        return;
-    }
-    
-    let totalGuests = 0;
-    
-    // Ordenar por data (mais recente primeiro)
-    confirmations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    confirmations.forEach(confirmation => {
-        const guestItem = document.createElement('div');
-        guestItem.className = 'guest-item';
+        const name = document.getElementById('nome').value;
+        const companions = document.getElementById('acompanhantes').value;
         
-        const date = new Date(confirmation.timestamp);
-        const formattedDate = date.toLocaleString('pt-BR');
-        
-        guestItem.innerHTML = `
-            <div>
-                <div class="guest-name">${confirmation.name}</div>
-                <div class="guest-date">Confirmado em: ${formattedDate}</div>
-            </div>
-            <div class="guest-companions">${confirmation.companions} acompanhante(s)</div>
-        `;
-        
-        guestList.appendChild(guestItem);
-        
-        // Calcular total de pessoas
-        totalGuests += 1 + parseInt(confirmation.companions);
-    });
-    
-    totalConfirmationsElement.textContent = confirmations.length;
-    totalGuestsElement.textContent = totalGuests;
-}
-
-// Atualizar dados
-function refreshData() {
-    loadConfirmations();
-}
-
-// Exportar dados
-function exportData() {
-    try {
-        const confirmations = JSON.parse(localStorage.getItem('confirmedGuests')) || [];
-        if (confirmations.length === 0) {
-            alert('Nenhum dado para exportar.');
+        // Validar se o nome foi preenchido
+        if (!name.trim()) {
+            alert('Por favor, informe seu nome.');
             return;
         }
         
-        // Converter para CSV
-        let csv = 'Nome,Acompanhantes,Data/Hora\n';
-        confirmations.forEach(confirmation => {
-            csv += `"${confirmation.name}",${confirmation.companions},"${new Date(confirmation.timestamp).toLocaleString('pt-BR')}"\n`;
-        });
-        
-        // Criar arquivo para download
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'confirmacoes-aniversario.csv');
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    } catch (error) {
-        console.error('Erro ao exportar dados:', error);
-        alert('Erro ao exportar dados.');
-    }
+        try {
+            // Enviar para a API
+            const response = await fetch(`${BACKEND_URL}/api/confirmar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    companions: companions
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Limpar formulário
+                form.reset();
+                
+                // Mostrar mensagem de sucesso
+                showSuccessMessage();
+            } else {
+                alert('Erro ao confirmar: ' + (result.error || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            // Fallback para localStorage se a API não estiver disponível
+            saveToLocalStorage(name, companions);
+        }
+    });
 }
 
-// Inicializar a página
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se já está logado (apenas para desenvolvimento)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('debug') === 'true') {
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'block';
-        loadConfirmations();
+// Função fallback para salvar no localStorage
+function saveToLocalStorage(name, companions) {
+    const confirmedGuests = JSON.parse(localStorage.getItem('confirmedGuests')) || [];
+    
+    // Verificar se já existe uma confirmação com este nome
+    const existingConfirmation = confirmedGuests.find(guest => 
+        guest.name.toLowerCase() === name.toLowerCase()
+    );
+    
+    if (existingConfirmation) {
+        if (confirm('Já existe uma confirmação com este nome. Deseja atualizar?')) {
+            // Atualizar confirmação existente
+            existingConfirmation.companions = companions;
+            existingConfirmation.timestamp = new Date().toISOString();
+        } else {
+            return;
+        }
+    } else {
+        // Adicionar nova confirmação
+        confirmedGuests.push({
+            name: name,
+            companions: companions,
+            timestamp: new Date().toISOString()
+        });
     }
-});
+    
+    // Salvar no localStorage
+    localStorage.setItem('confirmedGuests', JSON.stringify(confirmedGuests));
+    
+    // Mostrar mensagem de sucesso
+    showSuccessMessage();
+    
+    // Avisar que os dados foram salvos localmente
+    alert('Dados salvos localmente. A conexão com o servidor pode estar indisponível.');
+}
+
+// Mostrar mensagem de sucesso
+function showSuccessMessage() {
+    const successMessage = document.getElementById('success-message');
+    successMessage.style.display = 'block';
+    
+    // Esconder mensagem após 5 segundos
+    setTimeout(() => {
+        successMessage.style.display = 'none';
+    }, 5000);
+}
