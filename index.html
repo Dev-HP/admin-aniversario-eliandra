@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Aniversário da Elíandra</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-lock"></i> Área Administrativa</h1>
+            <p>Aniversário da Elíandra - Confirmações de Presença</p>
+        </header>
+        
+        <div class="content">
+            <div id="login-section" class="login-section">
+                <h2><i class="fas fa-key"></i> Acesso Restrito</h2>
+                <div class="form-group">
+                    <label for="password">Senha de administração:</label>
+                    <input type="password" id="password" placeholder="Digite a senha">
+                </div>
+                <button onclick="login()"><i class="fas fa-sign-in-alt"></i> Acessar</button>
+                <div id="login-error" class="error-message" style="display: none;">
+                    Senha incorreta. Tente novamente.
+                </div>
+            </div>
+            
+            <div id="admin-panel" class="admin-panel">
+                <h2><i class="fas fa-list"></i> Lista de Confirmados</h2>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="total-confirmations">0</div>
+                        <div>Confirmações</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="total-guests">0</div>
+                        <div>Total de Pessoas</div>
+                    </div>
+                </div>
+                
+                <div id="guest-list" class="guest-list">
+                    <!-- Lista de confirmados será preenchida via JavaScript -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                    <button onclick="refreshData()" style="margin-left: 10px;"><i class="fas fa-sync-alt"></i> Atualizar</button>
+                    <button onclick="exportData()" style="margin-left: 10px;"><i class="fas fa-download"></i> Exportar</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Elíandra Birthday - Área Administrativa</p>
+            <p>&copy; 2025 - Desenvolvido por hp</p>
+        </footer>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
