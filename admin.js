@@ -1,63 +1,10 @@
-// Cole a MESMA URL que você usou na página de confirmação
+// Cole A MESMA URL do seu aplicativo da web do Google Apps Script
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz04yKUOFiB6aoCsNGNTGoEaCQmcL2zSxL2kUEYkXwlz4MVi9qxzNJWuiRtQkuLGpjxdg/exec";
 
-// ... (funções login e logout continuam iguais) ...
+// Configurações de senha
+const ADMIN_PASSWORD = 'eliandra2025';
 
-// Carregar confirmações da Planilha Google
-async function loadConfirmations() {
-    try {
-        const response = await fetch(SCRIPT_URL);
-        if (!response.ok) {
-            throw new Error('Erro na rede ao buscar dados.');
-        }
-        const confirmations = await response.json();
-
-        // Passa os dados para a função que monta a lista na tela
-        displayConfirmations(confirmations);
-
-    } catch (error) {
-        console.error('Erro ao carregar confirmações:', error);
-        document.getElementById('guest-list').innerHTML = '<div class="guest-item">Erro ao carregar dados. Tente atualizar.</div>';
-    }
-}
-
-// A função displayConfirmations continua exatamente a mesma.
-
-// Exportar dados
-async function exportData() {
-    try {
-        const response = await fetch(SCRIPT_URL);
-        const confirmations = await response.json();
-
-        if (confirmations.length === 0) {
-            alert('Nenhum dado para exportar.');
-            return;
-        }
-
-        let csv = 'Nome,Acompanhantes,Data/Hora\n';
-        confirmations.forEach(confirmation => {
-            // A data já vem formatada do script
-            csv += `"${confirmation.name}",${confirmation.companions},"${confirmation.timestamp}"\n`;
-        });
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'confirmacoes-aniversario.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    } catch (error) {
-        console.error('Erro ao exportar dados:', error);
-        alert('Erro ao exportar dados.');
-    }
-}
-
-// ... (Resto do arquivo) ...
-// Configurações
-const ADMIN_PASSWORD = 'eliandra2025'; // Altere para uma senha mais segura
+// --- FUNÇÕES DE AUTENTICAÇÃO ---
 
 // Função de login
 function login() {
@@ -80,24 +27,24 @@ function logout() {
     document.getElementById('password').value = '';
 }
 
-// Carregar confirmações
-function loadConfirmations() {
+// --- FUNÇÕES DE DADOS (COMUNICAÇÃO COM A PLANILHA) ---
+
+// Carregar confirmações da Planilha Google
+async function loadConfirmations() {
     try {
-        // Tenta carregar do localStorage primeiro
-        const confirmations = JSON.parse(localStorage.getItem('confirmedGuests')) || [];
-        displayConfirmations(confirmations);
-        
-        // Se não houver dados no localStorage, tenta carregar do backend
-        if (confirmations.length === 0) {
-            // Você pode implementar uma chamada para um backend aqui se necessário
-            console.log('Nenhuma confirmação encontrada no localStorage');
+        const response = await fetch(SCRIPT_URL);
+        if (!response.ok) {
+            throw new Error('Erro de rede ao buscar confirmações.');
         }
+        const confirmations = await response.json();
+        displayConfirmations(confirmations);
     } catch (error) {
         console.error('Erro ao carregar confirmações:', error);
+        document.getElementById('guest-list').innerHTML = '<div class="guest-item">Falha ao carregar dados. Tente atualizar a página.</div>';
     }
 }
 
-// Exibir confirmações na lista
+// Exibir confirmações na lista (a função original, sem alterações)
 function displayConfirmations(confirmations) {
     const guestList = document.getElementById('guest-list');
     const totalConfirmationsElement = document.getElementById('total-confirmations');
@@ -105,7 +52,7 @@ function displayConfirmations(confirmations) {
     
     guestList.innerHTML = '';
     
-    if (confirmations.length === 0) {
+    if (!confirmations || confirmations.length === 0) {
         guestList.innerHTML = '<div class="guest-item">Nenhuma confirmação ainda.</div>';
         totalConfirmationsElement.textContent = '0';
         totalGuestsElement.textContent = '0';
@@ -114,15 +61,13 @@ function displayConfirmations(confirmations) {
     
     let totalGuests = 0;
     
-    // Ordenar por data (mais recente primeiro)
-    confirmations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
+    // O script já retorna os dados com o mais recente primeiro
     confirmations.forEach(confirmation => {
         const guestItem = document.createElement('div');
         guestItem.className = 'guest-item';
         
-        const date = new Date(confirmation.timestamp);
-        const formattedDate = date.toLocaleString('pt-BR');
+        // A data/hora já vem formatada do script
+        const formattedDate = confirmation.timestamp; 
         
         guestItem.innerHTML = `
             <div>
@@ -134,35 +79,35 @@ function displayConfirmations(confirmations) {
         
         guestList.appendChild(guestItem);
         
-        // Calcular total de pessoas
-        totalGuests += 1 + parseInt(confirmation.companions);
+        // Calcular total de pessoas (convidado + acompanhantes)
+        totalGuests += 1 + parseInt(confirmation.companions || 0);
     });
     
     totalConfirmationsElement.textContent = confirmations.length;
     totalGuestsElement.textContent = totalGuests;
 }
 
-// Atualizar dados
+// Atualizar dados (simplesmente chama a função de carregar)
 function refreshData() {
     loadConfirmations();
 }
 
-// Exportar dados
-function exportData() {
+// Exportar dados para CSV
+async function exportData() {
     try {
-        const confirmations = JSON.parse(localStorage.getItem('confirmedGuests')) || [];
+        const response = await fetch(SCRIPT_URL);
+        const confirmations = await response.json();
+
         if (confirmations.length === 0) {
             alert('Nenhum dado para exportar.');
             return;
         }
         
-        // Converter para CSV
         let csv = 'Nome,Acompanhantes,Data/Hora\n';
         confirmations.forEach(confirmation => {
-            csv += `"${confirmation.name}",${confirmation.companions},"${new Date(confirmation.timestamp).toLocaleString('pt-BR')}"\n`;
+            csv += `"${confirmation.name}",${confirmation.companions},"${confirmation.timestamp}"\n`;
         });
         
-        // Criar arquivo para download
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
@@ -180,13 +125,14 @@ function exportData() {
     }
 }
 
-// Inicializar a página
+// --- INICIALIZAÇÃO DA PÁGINA ---
+
+// Adiciona um listener para a página carregar
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se já está logado (apenas para desenvolvimento)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('debug') === 'true') {
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'block';
-        loadConfirmations();
-    }
+    // Permite fazer login apertando a tecla "Enter"
+    document.getElementById('password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
 });
