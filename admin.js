@@ -1,6 +1,3 @@
-// Cole A MESMA URL do seu aplicativo da web do Google Apps Script
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz04yKUOFiB6aoCsNGNTGoEaCQmcL2zSxL2kUEYkXwlz4MVi9qxzNJWuiRtQkuLGpjxdg/exec";
-
 // Configurações de senha
 const ADMIN_PASSWORD = 'eliandra2025';
 
@@ -12,7 +9,6 @@ function login() {
     if (password === ADMIN_PASSWORD) {
         document.getElementById('login-section').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
-        document.getElementById('login-error').style.display = 'none';
         loadConfirmations();
     } else {
         document.getElementById('login-error').style.display = 'block';
@@ -25,19 +21,23 @@ function logout() {
     document.getElementById('password').value = '';
 }
 
-// --- FUNÇÕES DE DADOS ---
+// --- FUNÇÕES DE DADOS (COMUNICAÇÃO COM O FIREBASE) ---
 
 async function loadConfirmations() {
     try {
-        const response = await fetch(SCRIPT_URL);
-        if (!response.ok) {
-            throw new Error('Erro de rede ao buscar confirmações.');
-        }
-        const confirmations = await response.json();
+        // A variável 'db' vem do script de inicialização no arquivo index.html
+        const snapshot = await db.collection("confirmacoes").orderBy("timestamp", "desc").get();
+        const confirmations = [];
+        
+        snapshot.forEach(doc => {
+            confirmations.push(doc.data());
+        });
+        
         displayConfirmations(confirmations);
+
     } catch (error) {
         console.error('Erro ao carregar confirmações:', error);
-        document.getElementById('guest-list').innerHTML = '<div class="guest-item">Falha ao carregar dados. Tente atualizar a página.</div>';
+        document.getElementById('guest-list').innerHTML = '<div class="guest-item">Falha ao carregar dados do Firebase.</div>';
     }
 }
 
@@ -60,7 +60,8 @@ function displayConfirmations(confirmations) {
     confirmations.forEach(confirmation => {
         const guestItem = document.createElement('div');
         guestItem.className = 'guest-item';
-        const formattedDate = confirmation.timestamp; 
+        const date = confirmation.timestamp ? confirmation.timestamp.toDate() : new Date();
+        const formattedDate = date.toLocaleString('pt-BR');
         
         guestItem.innerHTML = `
             <div>
@@ -84,17 +85,17 @@ function refreshData() {
 
 async function exportData() {
     try {
-        const response = await fetch(SCRIPT_URL);
-        const confirmations = await response.json();
-
-        if (confirmations.length === 0) {
+        const snapshot = await db.collection("confirmacoes").orderBy("timestamp", "desc").get();
+        if (snapshot.empty) {
             alert('Nenhum dado para exportar.');
             return;
         }
-        
+
         let csv = 'Nome,Acompanhantes,Data/Hora\n';
-        confirmations.forEach(confirmation => {
-            csv += `"${confirmation.name}",${confirmation.companions},"${confirmation.timestamp}"\n`;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.timestamp ? data.timestamp.toDate().toLocaleString('pt-BR') : 'N/A';
+            csv += `"${data.name}",${data.companions},"${date}"\n`;
         });
         
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -103,8 +104,6 @@ async function exportData() {
         
         link.setAttribute('href', url);
         link.setAttribute('download', 'confirmacoes-aniversario.csv');
-        link.style.visibility = 'hidden';
-        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -116,15 +115,12 @@ async function exportData() {
 
 // --- INICIALIZAÇÃO DA PÁGINA ---
 
-// Adiciona os eventos quando a página carregar
 document.addEventListener('DOMContentLoaded', function() {
-    // Conecta as funções aos botões
     document.getElementById('login-btn').addEventListener('click', login);
     document.getElementById('logout-btn').addEventListener('click', logout);
     document.getElementById('refresh-btn').addEventListener('click', refreshData);
     document.getElementById('export-btn').addEventListener('click', exportData);
     
-    // Permite fazer login apertando a tecla "Enter"
     document.getElementById('password').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             login();
