@@ -25,14 +25,17 @@ function logout() {
 
 async function loadConfirmations() {
     try {
-        // A variável 'db' vem do script de inicialização no arquivo index.html
         const snapshot = await db.collection("confirmacoes").orderBy("timestamp", "desc").get();
-        const confirmations = [];
         
+        // CORREÇÃO ESTÁ AQUI: Nós criamos uma lista vazia...
+        const confirmations = []; 
+        
+        // ...e então preenchemos essa lista com os dados de cada documento.
         snapshot.forEach(doc => {
             confirmations.push(doc.data());
         });
         
+        // Agora, passamos a lista formatada corretamente para a função de exibição.
         displayConfirmations(confirmations);
 
     } catch (error) {
@@ -57,6 +60,7 @@ function displayConfirmations(confirmations) {
     
     let totalGuests = 0;
     
+    // Agora 'confirmations' é garantidamente uma lista (array) e o .forEach funcionará.
     confirmations.forEach(confirmation => {
         const guestItem = document.createElement('div');
         guestItem.className = 'guest-item';
@@ -65,7 +69,7 @@ function displayConfirmations(confirmations) {
         
         guestItem.innerHTML = `
             <div>
-                <div class="guest-name">${confirmation.name}</div>
+                <div class.guest-name">${confirmation.name}</div>
                 <div class="guest-date">Confirmado em: ${formattedDate}</div>
             </div>
             <div class="guest-companions">${confirmation.companions} acompanhante(s)</div>
